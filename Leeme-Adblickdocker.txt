@@ -1,0 +1,122 @@
+Archivo python dockerizado para generar archivos shapefiles a partir de un archivo KML usando las librerias osgeo/GDAL de código abierto.
+
+Docker:
+	Se genero un docker con una imagen tomada desde DockerHub que contenga la librería osgeo/GDAL  sobre python 3.8. Esta librería es necesaria para el codigo handler.py
+	https://github.com/thinkWhere/GDAL-Docker/tree/develop/3.8-ubuntu
+
+	docker pull osgeo/gdal:ubuntu-full-latest
+
+	Se modifico el Dockerfile para que corriera el handler.py
+
+Python:
+	El archivo handler.py lee un archivo KML y genera archivos Shapefile.
+	Este código toma el archivo KML_Samples.kml como entrada y debe generar los siguientes archivos porque tiene 3 tipos de objetos: puntos, lineas y polígonos. En nuestro caso siempre 		tendremos polígonos
+
+Entrada:
+	KML_Samples.kml (harcode en el codigo .py)
+
+Salida:
+	KML_Samples_lines.shp
+	KML_Samples_lines.dbf	
+	KML_Samples_lines.shx
+	ML_Samples_lines.prj 
+
+	KML_Samples_points.shp
+	KML_Samples_points.dbf 
+	KML_Samples_points.shx 
+	KML_Samples_points.prj 
+
+	KML_Samples_polygons.shp
+	KML_Samples_polygons.dbf  
+	KML_Samples_polygons.shx  
+	KML_Samples_polygons.prj  
+   
+Status:
+	Error al Correr el contenedor: al abrir el archivo KML (Ver Anexo C)
+
+Anexo-A: Comando del docker ---------
+Parar el contenedor:
+	docker stop $(docker ps -a -q)
+Para borrar el proceso del contenedor:
+	docker rm $(docker ps -a -q)
+Modifico el codigo python (handler.py) y guardo el visualcode
+Construir/Reconstruir el contenedor:
+	docker build -t thinkwhere/gdal-python:gdal3.0.4-py3.8 .
+Correr el contenedor:
+	docker run --name kkk2 -it thinkwhere/gdal-python:gdal3.0.4-py3.8
+
+Anexo-B: Resultado Construir/Reconstruir el contenedor: ------
+Sending build context to Docker daemon  48.13kB
+Step 1/17 : FROM ubuntu:focal
+ ---> 20fffa419e3a
+Step 2/17 : WORKDIR /
+ ---> Using cache
+ ---> bf6f12c24637
+Step 3/17 : RUN apt-get update
+ ---> Using cache
+ ---> 230a8831d16d
+Step 4/17 : ENV TZ 'GB'
+ ---> Using cache
+ ---> 13f91f7f2133
+Step 5/17 : RUN echo $TZ > /etc/timezone &&     apt-get install -y tzdata &&     rm /etc/localtime &&     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime &&     dpkg-reconfigure -f noninteractive tzdata &&     apt-get clean
+ ---> Using cache
+ ---> 560755dcbb0f
+Step 6/17 : RUN apt-get install -y python3-pip libgdal-dev locales
+ ---> Using cache
+ ---> 833907d558c4
+Step 7/17 : RUN locale-gen en_GB.UTF-8
+ ---> Using cache
+ ---> 1175a7648f87
+Step 8/17 : ENV LC_ALL='en_GB.utf8'
+ ---> Using cache
+ ---> 3ef9ff647629
+Step 9/17 : RUN echo 'alias python=python3' >> ~/.bashrc
+ ---> Using cache
+ ---> 931f22c6eb76
+Step 10/17 : RUN echo 'alias pip=pip3' >> ~/.bashrc
+ ---> Using cache
+ ---> eed60e04ae99
+Step 11/17 : ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ ---> Using cache
+ ---> 4eae06f99b9e
+Step 12/17 : ENV C_INCLUDE_PATH=/usr/include/gdal
+ ---> Using cache
+ ---> 398bbe581c64
+Step 13/17 : RUN pip3 install GDAL==3.0.4
+ ---> Using cache
+ ---> d6d9c0988760
+Step 14/17 : ADD handler.py /home/handler.py
+ ---> b65a2a3e3a2e
+Step 15/17 : ADD KML_Samples.kml /home/KML_Samples.kml
+ ---> e8cf9abfb9ea
+Step 16/17 : CMD ["/home/handler.py"]
+ ---> Running in a1a8c4e39db3
+Removing intermediate container a1a8c4e39db3
+ ---> 6bd31e2df9dc
+Step 17/17 : ENTRYPOINT ["python3"]
+ ---> Running in 927043a74a75
+Removing intermediate container 927043a74a75
+ ---> 6472c59b8220
+Successfully built 6472c59b8220
+Successfully tagged thinkwhere/gdal-python:gdal3.0.4-py3.8
+
+--------
+
+Anexo-C: Error al Correr el contenedor: Error al abrir el archivo KML:---
+
+Traceback (most recent call last):
+  File "/home/handler.py", line 206, in <module>
+    kmz_converter('KML_Samples.kml')
+  File "/home/handler.py", line 18, in kmz_converter
+    data_source = open_kmz(kmz_file)
+  File "/home/handler.py", line 138, in open_kmz
+    data_source= driver.Open(kmz_file, gdalconst.GA_ReadOnly)
+  File "/usr/local/lib/python3.8/dist-packages/osgeo/gdal.py", line 1757, in <lambda>
+    __getattr__ = lambda self, name: _swig_getattr(self, Driver, name)
+  File "/usr/local/lib/python3.8/dist-packages/osgeo/gdal.py", line 74, in _swig_getattr
+    return _swig_getattr_nondynamic(self, class_type, name, 0)
+  File "/usr/local/lib/python3.8/dist-packages/osgeo/gdal.py", line 69, in _swig_getattr_nondynamic
+    return object.__getattr__(self, name)
+AttributeError: type object 'object' has no attribute '__getattr__'
+kdf@kdf-ThinkPad-E15-Gen-2:~/lambdaGdal/kmltoshp$ 
+-----------------
